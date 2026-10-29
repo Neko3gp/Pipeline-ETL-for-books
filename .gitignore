@@ -1,0 +1,12 @@
+# Entorno y artefactos generados por Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Herramientas locales
+.DS_Store
+.env
+
+# Salidas habituales
+*.log
