@@ -133,32 +133,7 @@ colección histórica.
 └── README.md               # Documentación principal
 ```
 
-## Puntos importantes para exponerlo
 
-1. **Airflow orquesta; no es la base de datos.** Define dependencias,
-   reintentos y periodicidad.
-2. **Kafka desacopla productores y consumidores.** Cada fuente tiene su topic
-   para poder distinguir formatos y procesarlos después.
-3. **La transformación ocurre antes de MongoDB.** Por ejemplo, `£51.77`
-   pasa a `51.77`, `Three` pasa a `3` y la disponibilidad pasa a booleano.
-4. **MongoDB conserva documentos flexibles.** Las fuentes tienen campos
-   distintos, por lo que separarlas evita forzar un modelo artificial.
-5. **Streamlit no modifica datos.** Solo consulta MongoDB y dibuja resultados.
-6. **Los reintentos cubren fallos transitorios.** El DAG tiene dos reintentos
-   con una espera de 30 segundos.
-
-## Limitaciones y mejoras futuras
-
-- Las fuentes son sitios públicos y pueden cambiar su HTML o limitar
-  peticiones; en producción convendría añadir rate limiting, validación y
-  observabilidad.
-- El scraping recorre varias categorías y puede tardar unos minutos.
-- El pipeline reemplaza datos en cada corrida y no conserva histórico.
-- Las credenciales y secretos no están configurados porque el entorno es
-  local; en producción deben gestionarse mediante variables seguras o un
-  secret backend.
-- Se podría añadir un esquema de validación, tests automatizados, volúmenes
-  persistentes y un registro de ejecuciones.
 
 ## Licencia y uso
 
