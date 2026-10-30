@@ -74,7 +74,7 @@ st.subheader("Todos los libros")
 tabla = pd.concat([
     libros.assign(fuente="Books to Scrape"),
     api.assign(fuente="Open Library"),
-])[["fuente", "titulo", "autor", "categoria", "precio", "rating", "ao"]]
+])[["fuente", "titulo", "autor", "categoria", "precio", "rating", "año"]]
 
 f1, f2, f3 = st.columns(3) #columnas para los filtros de búsqueda
 titulo = f1.text_input("Filtrar por título")

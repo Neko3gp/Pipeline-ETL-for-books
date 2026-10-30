@@ -60,7 +60,7 @@ def pipeline():
             "https://openlibrary.org/search.json",
             params={
                 "q": "subject:fiction",
-                "limit": 100, #limita la cantidad de libros a 100 para no saturar la API y mantener el DAG rápido
+                "limit": 250, #limita la cantidad de libros a 250 para no saturar la API y mantener el DAG rápido
                 "fields": "key,title,author_name,first_publish_year,subject", #campos que se desean obtener de la API para cada libro
             },
             timeout=30, #si tarda más de 30secs se genera execpcion de tiempo de espera
@@ -73,30 +73,38 @@ def pipeline():
     # 2 Scraping: Books to Scrape aporta precio y rating pero no metadatos bibliograficos
     @task
     def scraping_books_to_scrape():
-        base = "https://books.toscrape.com/" 
-        sopa = leer_pagina(base) 
+        LIMITE = 400  # máximo de libros a extraer por ejecución del DAG para no exceder el tiempo de ejecución
 
-        # La barra lateral contiene las categorias y sus enlaces 
+        base = "https://books.toscrape.com/"
+        sopa = leer_pagina(base)
+
+        # La barra lateral contiene las categorias y sus enlaces
         categorias = [(a.text.strip(), urljoin(base, a["href"])) for a in sopa.select("div.side_categories ul ul a")] #extrae el nombre de la categoria y la url de cada categoria
         if not categorias:
             raise ValueError("No se encontraron categorías: revisa el HTML de la página") # Si no hay categorías, se lanza una excepción
 
         libros = [] #aqui se almacenan los libros obtenidos del scraping con todos sus datos
         for nombre, url in categorias:
-            while url:  
+            if len(libros) >= LIMITE:   # límite global alcanzado: dejamos de recorrer categorías
+                break
+            while url:
                 sopa = leer_pagina(url)
                 for libro in sopa.select("article.product_pod"):
                     libros.append({
                         "titulo": libro.h3.a["title"],
-                        "precio": libro.select_one("p.price_color").text,                 
-                        "rating": libro.select_one("p.star-rating")["class"][1],          
+                        "precio": libro.select_one("p.price_color").text,
+                        "rating": libro.select_one("p.star-rating")["class"][1],
                         "disponibilidad": libro.select_one("p.availability").text.strip(),  #saber si hay stock
-                        "categoria": nombre, 
+                        "categoria": nombre,
                     })
+                    if len(libros) >= LIMITE:   # límite global alcanzado: salimos del loop de artículos
+                        break
+                if len(libros) >= LIMITE:       # límite global alcanzado: no pedimos la siguiente página
+                    break
                 siguiente = sopa.select_one("li.next a") # Busca el enlace a la siguiente página para continuar el scraping
                 url = urljoin(url, siguiente["href"]) if siguiente else None # Si hay siguiente, se actualiza la url, si no, se pone None
 
-        print(f"Books to Scrape: {len(libros)} libros en {len(categorias)} categorías")
+        print(f"Books to Scrape: {len(libros)} libros en {len(categorias)} categorías (límite={LIMITE})")
         return libros
 
     # 3 Publicar en Kafka. Cada origen tiene un topic independiente.
